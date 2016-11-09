@@ -35,6 +35,14 @@ func (f LevelEnablerFunc) apply(m *Meta) { m.Enabler = f }
 // Enabled calls the wrapped function.
 func (f LevelEnablerFunc) Enabled(lvl Level, msg string) bool { return f(lvl, msg) }
 
+var (
+	// Enabled is a hardwired-true Enabler/Option.
+	Enabled = LevelEnablerFunc(func(Level, string) bool { return true })
+
+	// Disabled is a hardwired-false Enabler/Option.
+	Disabled = LevelEnablerFunc(func(Level, string) bool { return false })
+)
+
 // Meta is implementation-agnostic state management for Loggers. Most Logger
 // implementations can reduce the required boilerplate by embedding a Meta.
 //
