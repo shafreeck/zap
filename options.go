@@ -38,9 +38,14 @@ func (lvl AtomicLevel) apply(m *Meta) { m.LevelEnabler = lvl }
 
 // Fields sets the initial fields for the logger.
 func Fields(fields ...Field) Option {
-	return optionFunc(func(m *Meta) {
-		addFields(m.Encoder, fields)
-	})
+	return WithFields(fields)
+}
+
+// WithFields implements an Option that adds some fields to a logger.
+type WithFields []Field
+
+func (fs WithFields) apply(m *Meta) {
+	addFields(m.Encoder, fs)
 }
 
 // Output sets the destination for the logger's output. The supplied WriteSyncer
