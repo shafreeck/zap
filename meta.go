@@ -76,6 +76,16 @@ func (m Meta) Clone() Meta {
 	return m
 }
 
+// Configure creates a copy of the meta object, using Clone(), and applies any
+// given options.
+func (m Meta) Configure(options ...Option) Meta {
+	m = m.Clone()
+	for _, opt := range options {
+		opt.apply(&m)
+	}
+	return m
+}
+
 // Enabled returns true if logging a message at a particular level is enabled.
 func (m Meta) Enabled(lvl Level) bool {
 	return lvl >= m.Level()
