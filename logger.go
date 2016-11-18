@@ -37,8 +37,11 @@ type Logger interface {
 	// without restarting your application.
 	SetLevel(Level)
 
-	// Create a child logger, and optionally add some context to that logger.
+	// Create a child logger, and optionally add some context to it.
 	With(...Field) Logger
+
+	// Create a child logger, and opitonally change some Options on it.
+	WithOptions(...Option) Logger
 
 	// Check returns a CheckedMessage if logging a message at the specified level
 	// is enabled. It's a completely optional optimization; in high-performance
