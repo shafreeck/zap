@@ -89,6 +89,20 @@ func (z *zapper) With(fields ...zap.Field) zap.Logger {
 	}
 }
 
+// Create a child logger, maybe change some options on it.
+func (z *zapper) WithOptions(options ...zap.Option) zap.Logger {
+	bl := z.bl
+	for _, opt := range options {
+		if fields, ok := opt.(zap.WithFields); ok {
+			bl = bl.WithFields(zapToBark(fields))
+		}
+	}
+	return &zapper{
+		Meta: z.Meta.Configure(options...),
+		bl:   bl,
+	}
+}
+
 func (z *zapper) Check(l zap.Level, msg string) *zap.CheckedMessage {
 	return z.Meta.Check(z, l, msg)
 }
