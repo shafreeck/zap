@@ -81,6 +81,12 @@ func (log *logger) With(fields ...Field) Logger {
 	return clone
 }
 
+func (log *logger) WithOptions(options ...Option) Logger {
+	return &logger{
+		Meta: log.Meta.Configure(options...),
+	}
+}
+
 func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
 	return log.Meta.Check(log, lvl, msg)
 }
