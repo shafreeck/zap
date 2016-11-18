@@ -92,6 +92,21 @@ func (l *Logger) With(fields ...zap.Field) zap.Logger {
 	}
 }
 
+// WithOptions creates a new Logger with some options changed.
+func (l *Logger) WithOptions(options ...zap.Option) zap.Logger {
+	context := l.context
+	for _, opt := range options {
+		if fields, ok := opt.(zap.WithFields); ok {
+			context = append(context, fields...)
+		}
+	}
+	return &Logger{
+		Meta:    l.Meta.Configure(options...),
+		sink:    l.sink,
+		context: context,
+	}
+}
+
 // Check returns a CheckedMessage if logging a particular message would succeed.
 func (l *Logger) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
 	return l.Meta.Check(l, lvl, msg)
