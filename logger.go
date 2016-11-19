@@ -31,21 +31,6 @@ var (
 	_timeNow = time.Now
 )
 
-// An Entry represents a complete log message. The entry's structured context
-// is already serialized, but the log level, time, and message are available
-// for inspection and modification.
-type Entry struct {
-	Level   Level
-	Time    time.Time
-	Message string
-	enc     Encoder
-}
-
-// Fields returns a mutable reference to the entry's accumulated context.
-func (e Entry) Fields() KeyValue {
-	return e.enc
-}
-
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
 type Logger interface {
@@ -154,29 +139,11 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 		return
 	}
 
-	t := _timeNow().UTC()
-	temp := log.Encoder.Clone()
-	addFields(temp, fields)
-
-	if len(log.Hooks) > 0 {
-		entry := Entry{
-			Level:   lvl,
-			Message: msg,
-			Time:    t,
-			enc:     temp,
-		}
-		for _, hook := range log.Hooks {
-			if err := hook(&entry); err != nil {
-				log.InternalError("hook", err)
-			}
-		}
-		t, lvl, msg = entry.Time, entry.Level, entry.Message
-	}
-
-	if err := temp.WriteEntry(log.Output, msg, lvl, t); err != nil {
+	t, lvl, msg, enc := log.RunHooks(_timeNow().UTC(), lvl, msg, fields)
+	if err := enc.WriteEntry(log.Output, msg, lvl, t); err != nil {
 		log.InternalError("encoder", err)
 	}
-	temp.Free()
+	enc.Free()
 
 	if lvl > ErrorLevel {
 		// Sync on Panic and Fatal, since they may crash the program.
