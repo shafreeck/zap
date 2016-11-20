@@ -23,6 +23,7 @@ package zap
 import (
 	"fmt"
 	"os"
+	"time"
 )
 
 // Meta is implementation-agnostic state management for Loggers. Most Logger
@@ -85,4 +86,42 @@ func (m Meta) Check(log Logger, lvl Level, msg string) *CheckedMessage {
 func (m Meta) InternalError(cause string, err error) {
 	fmt.Fprintf(m.ErrorOutput, "%v %s error: %v\n", _timeNow().UTC(), cause, err)
 	m.ErrorOutput.Sync()
+}
+
+// An Entry represents a complete log message. The entry's structured context
+// is already serialized, but the log level, time, and message are available
+// for inspection and modification.
+type Entry struct {
+	Level   Level
+	Time    time.Time
+	Message string
+	enc     Encoder
+}
+
+// Fields returns a mutable reference to the entry's accumulated context.
+func (e Entry) Fields() KeyValue {
+	return e.enc
+}
+
+// Encode runs any Hook functions, returning a possibly modified
+// time, message, and level.
+func (m Meta) Encode(t time.Time, lvl Level, msg string, fields []Field) (string, Encoder) {
+	enc := m.Encoder.Clone()
+	addFields(enc, fields)
+	if len(m.Hooks) == 0 {
+		return msg, enc
+	}
+
+	entry := Entry{
+		Level:   lvl,
+		Message: msg,
+		Time:    t,
+		enc:     enc,
+	}
+	for _, hook := range m.Hooks {
+		if err := hook(&entry); err != nil {
+			m.InternalError("hook", err)
+		}
+	}
+	return entry.Message, entry.enc
 }
