@@ -112,6 +112,14 @@ func (ml multiLogger) With(fields ...Field) Logger {
 	return multiLogger(ml)
 }
 
+func (ml multiLogger) WithOptions(options ...Option) Logger {
+	ml = append([]Logger(nil), ml...)
+	for i, log := range ml {
+		ml[i] = log.WithOptions(options...)
+	}
+	return multiLogger(ml)
+}
+
 func (ml multiLogger) Check(lvl Level, msg string) *CheckedMessage {
 	switch lvl {
 	case FatalLevel, PanicLevel:
