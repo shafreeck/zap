@@ -54,7 +54,7 @@ type Logger interface {
 	// process, but calling Log(PanicLevel, ...) or Log(FatalLevel, ...) should
 	// not. It may not be possible for compatibility wrappers to comply with
 	// this last part (e.g. the bark wrapper).
-	Log(Level, string, ...Field)
+	Log(time.Time, Level, string, ...Field)
 	Debug(string, ...Field)
 	Info(string, ...Field)
 	Warn(string, ...Field)
@@ -98,8 +98,8 @@ func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
 	return log.Meta.Check(log, lvl, msg)
 }
 
-func (log *logger) Log(lvl Level, msg string, fields ...Field) {
-	log.log(_timeNow().UTC(), lvl, msg, fields)
+func (log *logger) Log(t time.Time, lvl Level, msg string, fields ...Field) {
+	log.log(t, lvl, msg, fields)
 }
 
 func (log *logger) Debug(msg string, fields ...Field) {
