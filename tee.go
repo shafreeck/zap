@@ -80,8 +80,8 @@ func (m multiError) asError() error {
 func (m multiError) Error() string {
 	sb := bytes.Buffer{}
 	for _, err := range m {
-		sb.WriteString(err.Error())
-		sb.WriteString(" ")
+		_, _ = sb.WriteString(err.Error())
+		_, _ = sb.WriteString(" ")
 	}
 	return sb.String()
 }
