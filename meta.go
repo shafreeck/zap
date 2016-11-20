@@ -121,13 +121,13 @@ func (e Entry) Fields() KeyValue {
 	return e.enc
 }
 
-// RunHooks runs any Hook functions, returning a possibly modified
+// Encode runs any Hook functions, returning a possibly modified
 // time, message, and level.
-func (m Meta) RunHooks(t time.Time, lvl Level, msg string, fields []Field) (time.Time, Level, string, Encoder) {
+func (m Meta) Encode(t time.Time, lvl Level, msg string, fields []Field) (string, Encoder) {
 	enc := m.Encoder.Clone()
 	addFields(enc, fields)
 	if len(m.Hooks) == 0 {
-		return t, lvl, msg, enc
+		return msg, enc
 	}
 
 	entry := Entry{
@@ -141,5 +141,5 @@ func (m Meta) RunHooks(t time.Time, lvl Level, msg string, fields []Field) (time
 			m.InternalError("hook", err)
 		}
 	}
-	return entry.Time, entry.Level, entry.Message, entry.enc
+	return entry.Message, entry.enc
 }
