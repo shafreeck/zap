@@ -64,6 +64,16 @@ func (m Meta) Clone() Meta {
 	return m
 }
 
+// Configure creates a copy of the meta object, using Clone(), and applies any
+// given options.
+func (m Meta) Configure(options ...Option) Meta {
+	m = m.Clone()
+	for _, opt := range options {
+		opt.apply(&m)
+	}
+	return m
+}
+
 // Check returns a CheckedMessage logging the given message is Enabled, nil
 // otherwise.
 func (m Meta) Check(log Logger, lvl Level, msg string) *CheckedMessage {

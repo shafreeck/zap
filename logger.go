@@ -34,8 +34,11 @@ var (
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
 type Logger interface {
-	// Create a child logger, and optionally add some context to that logger.
+	// Create a child logger, and optionally add some context to it.
 	With(...Field) Logger
+
+	// Create a child logger, and opitonally change some Options on it.
+	WithOptions(...Option) Logger
 
 	// Check returns a CheckedMessage if logging a message at the specified level
 	// is enabled. It's a completely optional optimization; in high-performance
@@ -83,6 +86,12 @@ func (log *logger) With(fields ...Field) Logger {
 	}
 	addFields(clone.Encoder, fields)
 	return clone
+}
+
+func (log *logger) WithOptions(options ...Option) Logger {
+	return &logger{
+		Meta: log.Meta.Configure(options...),
+	}
 }
 
 func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
