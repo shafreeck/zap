@@ -86,7 +86,7 @@ func (log *logger) With(fields ...Field) Logger {
 
 func (log *logger) WithOptions(options ...Option) Logger {
 	return &logger{
-		Meta: log.Meta.Configure(options...),
+		Meta: log.Meta.Clone(options...),
 	}
 }
 
