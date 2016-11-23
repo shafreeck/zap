@@ -58,15 +58,8 @@ func MakeMeta(enc Encoder, options ...Option) Meta {
 
 // Clone creates a copy of the meta struct. It deep-copies the encoder, but not
 // the hooks (since they rarely change).
-func (m Meta) Clone() Meta {
+func (m Meta) Clone(options ...Option) Meta {
 	m.Encoder = m.Encoder.Clone()
-	return m
-}
-
-// Configure creates a copy of the meta object, using Clone(), and applies any
-// given options.
-func (m Meta) Configure(options ...Option) Meta {
-	m = m.Clone()
 	for _, opt := range options {
 		opt.apply(&m)
 	}
