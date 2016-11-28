@@ -173,7 +173,7 @@ func ExampleNew_options() {
 	// {"level":"info","msg":"This is an info log.","count":1}
 }
 
-func ExampleCheckedMessage() {
+func ExampleLogger_Enabled() {
 	logger := zap.New(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 	)
@@ -181,15 +181,15 @@ func ExampleCheckedMessage() {
 	// By default, the debug logging level is disabled. However, calls to
 	// logger.Debug will still allocate a slice to hold any passed fields.
 	// Particularly performance-sensitive applications can avoid paying this
-	// penalty by using checked messages.
-	if cm := logger.Check(zap.DebugLevel, "This is a debug log."); cm.OK() {
+	// penalty by using enabled checks.
+	if logger.Enabled(zap.DebugLevel, "This is a debug log.") {
 		// Debug-level logging is disabled, so we won't get here.
-		cm.Write(zap.Int("foo", 42), zap.Stack())
+		logger.Debug("This is a debug log.", zap.Int("foo", 42), zap.Stack())
 	}
 
-	if cm := logger.Check(zap.InfoLevel, "This is an info log."); cm.OK() {
+	if logger.Enabled(zap.InfoLevel, "This is an info log.") {
 		// Since info-level logging is enabled, we expect to write out this message.
-		cm.Write()
+		logger.Info("This is an info log.")
 	}
 
 	// Output:

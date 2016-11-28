@@ -33,12 +33,10 @@ type Logger interface {
 	// Create a child logger, and optionally add some context to that logger.
 	With(...Field) Logger
 
-	// Check returns a CheckedMessage if logging a message at the specified level
+	// Enabled returns true if logging a message at the specified level
 	// is enabled. It's a completely optional optimization; in high-performance
-	// applications, Check can help avoid allocating a slice to hold fields.
-	//
-	// See CheckedMessage for an example.
-	Check(Level, string) *CheckedMessage
+	// applications, Enabled can help avoid allocating a slice to hold fields.
+	Enabled(Level, string) bool
 
 	// Log a message at the given level. Messages include any context that's
 	// accumulated on the logger, as well as any fields added at the log site.
@@ -81,10 +79,6 @@ func (log *logger) With(fields ...Field) Logger {
 	return clone
 }
 
-func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
-	return log.Meta.Check(log, lvl, msg)
-}
-
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 	log.log(lvl, msg, fields)
 }
@@ -124,7 +118,7 @@ func (log *logger) DFatal(msg string, fields ...Field) {
 }
 
 func (log *logger) log(lvl Level, msg string, fields []Field) {
-	if !log.Meta.Enabled(lvl) {
+	if !log.Meta.Enabled(lvl, msg) {
 		return
 	}
 

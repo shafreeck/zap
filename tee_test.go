@@ -94,13 +94,14 @@ func TestTeeLogsBoth(t *testing.T) {
 	}, sink2.Logs())
 }
 
+// TODO: TestTee_Enabled
+
 func TestTee_Panic(t *testing.T) {
 	log1, sink1 := spy.New(zap.DebugLevel)
 	log2, sink2 := spy.New(zap.WarnLevel)
 	log := zap.Tee(log1, log2)
 
 	assert.Panics(t, func() { log.Panic("foo") }, "tee logger.Panic panics")
-	assert.Panics(t, func() { log.Check(zap.PanicLevel, "bar").Write() }, "tee logger.Check(PanicLevel).Write() panics")
 	assert.NotPanics(t, func() { log.Log(zap.PanicLevel, "baz") }, "tee logger.Log(PanicLevel) does not panic")
 
 	assert.Equal(t, []spy.Log{

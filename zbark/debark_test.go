@@ -92,20 +92,24 @@ var levels = []zap.Level{
 	zap.ErrorLevel,
 }
 
-func TestDebark_Check(t *testing.T) {
+func TestDebark_Enabled(t *testing.T) {
 	logger, buf := newDebark(zap.DebugLevel)
 	for _, l := range append(levels, zap.PanicLevel, zap.FatalLevel) {
 		require.Equal(t, 0, buf.Len(), "buffer must be clean for %v", l)
-		lc := logger.Check(l, "msg")
-		require.NotNil(t, lc)
-		assert.True(t, lc.OK())
+		require.True(t, logger.Enabled(l, "msg"))
 		switch l {
 		case zap.FatalLevel:
 			continue
 		case zap.PanicLevel:
-			assert.Panics(t, func() { lc.Write() })
+			assert.Panics(t, func() {
+				if logger.Enabled(l, "msg") {
+					logger.Panic("msg")
+				}
+			})
 		default:
-			lc.Write()
+			if logger.Enabled(l, "msg") {
+				logger.Log(l, "msg")
+			}
 		}
 		assert.NotEqual(t, 0, buf.Len())
 		buf.Reset()
@@ -113,13 +117,15 @@ func TestDebark_Check(t *testing.T) {
 
 	logger, buf = newDebark(zap.PanicLevel)
 	for _, l := range levels {
-		assert.Nil(t, logger.Check(l, "msg"))
+		assert.False(t, logger.Enabled(l, "msg"))
 	}
 
 	// We should still panic even if the level isn't enough to log.
 	logger, buf = newDebark(zap.FatalLevel)
 	assert.Panics(t, func() {
-		logger.Check(zap.PanicLevel, "panic!").Write()
+		if logger.Enabled(zap.PanicLevel, "panic!") {
+			logger.Panic("panic!")
+		}
 	})
 }
 

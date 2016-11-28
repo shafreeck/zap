@@ -114,7 +114,7 @@ func BenchmarkZapDisabledLevelsAddingFields(b *testing.B) {
 	})
 }
 
-func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
+func BenchmarkZapDisabledLevelsEnabledAddingFields(b *testing.B) {
 	logger := zap.New(
 		zap.NewJSONEncoder(),
 		zap.ErrorLevel,
@@ -123,8 +123,8 @@ func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			if m := logger.Check(zap.InfoLevel, "Should be discarded."); m.OK() {
-				m.Write(fakeFields()...)
+			if logger.Enabled(zap.InfoLevel, "Should be discarded.") {
+				logger.Info("Should be discarded.", fakeFields()...)
 			}
 		}
 	})
@@ -210,7 +210,7 @@ func BenchmarkZapSampleAddingFields(b *testing.B) {
 	})
 }
 
-func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
+func BenchmarkZapSampleEnabledWithoutFields(b *testing.B) {
 	messages := fakeMessages(1000)
 	base := zap.New(
 		zap.NewJSONEncoder(),
@@ -223,14 +223,14 @@ func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 		i := 0
 		for pb.Next() {
 			i++
-			if cm := logger.Check(zap.InfoLevel, messages[i%1000]); cm.OK() {
-				cm.Write()
+			if logger.Enabled(zap.InfoLevel, messages[i%1000]) {
+				logger.Info(messages[i%1000])
 			}
 		}
 	})
 }
 
-func BenchmarkZapSampleCheckAddingFields(b *testing.B) {
+func BenchmarkZapSampleEnabledAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
 	base := zap.New(
 		zap.NewJSONEncoder(),
@@ -243,8 +243,8 @@ func BenchmarkZapSampleCheckAddingFields(b *testing.B) {
 		i := 0
 		for pb.Next() {
 			i++
-			if m := logger.Check(zap.InfoLevel, messages[i%1000]); m.OK() {
-				m.Write(fakeFields()...)
+			if logger.Enabled(zap.InfoLevel, messages[i%1000]) {
+				logger.Info(messages[i%1000], fakeFields()...)
 			}
 		}
 	})

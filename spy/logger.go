@@ -92,11 +92,6 @@ func (l *Logger) With(fields ...zap.Field) zap.Logger {
 	}
 }
 
-// Check returns a CheckedMessage if logging a particular message would succeed.
-func (l *Logger) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
-	return l.Meta.Check(l, lvl, msg)
-}
-
 // Log writes a message at the specified level.
 func (l *Logger) Log(lvl zap.Level, msg string, fields ...zap.Field) {
 	l.log(lvl, msg, fields)
@@ -145,7 +140,7 @@ func (l *Logger) DFatal(msg string, fields ...zap.Field) {
 }
 
 func (l *Logger) log(lvl zap.Level, msg string, fields []zap.Field) {
-	if l.Meta.Enabled(lvl) {
+	if l.Meta.Enabled(lvl, msg) {
 		l.sink.WriteLog(lvl, msg, l.allFields(fields))
 	}
 }

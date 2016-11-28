@@ -155,33 +155,41 @@ func TestSamplerTicks(t *testing.T) {
 	assert.Equal(t, expected, sink.Logs(), "Expected sleeping for a tick to reset sampler.")
 }
 
-func TestSamplerCheck(t *testing.T) {
+func TestSamplerEnabled(t *testing.T) {
 	sampler, sink := fakeSampler(zap.InfoLevel, time.Millisecond, 1, 10, false)
 
-	assert.Nil(t, sampler.Check(zap.DebugLevel, "foo"), "Expected a nil CheckedMessage at disabled log levels.")
+	assert.False(t, sampler.Enabled(zap.DebugLevel, "foo"), "Expected DebugLevel to be disabled")
 
 	for i := 1; i < 12; i++ {
-		if cm := sampler.Check(zap.InfoLevel, "sample"); cm.OK() {
-			cm.Write(zap.Int("iter", i))
+		if sampler.Enabled(zap.InfoLevel, "sample") {
+			sampler.Info("sample", zap.Int("iter", i))
 		}
 	}
 
 	expected := buildExpectation(zap.InfoLevel, 1, 11)
-	assert.Equal(t, expected, sink.Logs(), "Unexpected output when sampling with Check.")
+	assert.Equal(t, expected, sink.Logs(), "Unexpected output when using Enabled checks with sampling.")
 }
 
-func TestSamplerCheckPanicFatal(t *testing.T) {
+func TestSamplerEnabledPanicFatal(t *testing.T) {
 	for _, level := range []zap.Level{zap.FatalLevel, zap.PanicLevel} {
 		sampler, sink := fakeSampler(zap.FatalLevel+1, time.Millisecond, 1, 10, false)
 
-		assert.Nil(t, sampler.Check(zap.DebugLevel, "foo"), "Expected a nil CheckedMessage at disabled log levels.")
+		assert.False(t, sampler.Enabled(zap.DebugLevel, "foo"), "Expected DebugLevel to be disabled")
+
 		for i := 0; i < 5; i++ {
-			if cm := sampler.Check(level, "sample"); assert.True(t, cm.OK(), "expected %v level to always be OK", level) {
-				cm.Write(zap.Int("iter", i))
+			if assert.True(t, sampler.Enabled(level, "sample"), "expected %v level to always be enabled", level) {
+				switch level {
+				case zap.FatalLevel:
+					sampler.Fatal("sample", zap.Int("iter", i))
+				case zap.PanicLevel:
+					sampler.Panic("sample", zap.Int("iter", i))
+				default:
+					panic("broken test fixture")
+				}
 			}
 		}
 
-		assert.Equal(t, []spy.Log(nil), sink.Logs(), "Unexpected output when sampling with Check.")
+		assert.Equal(t, []spy.Log(nil), sink.Logs(), "Unexpected output when sampling with Enabled checks.")
 	}
 }
 

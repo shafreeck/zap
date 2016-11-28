@@ -102,17 +102,15 @@ func (s *sampler) With(fields ...zap.Field) zap.Logger {
 	}
 }
 
-func (s *sampler) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
-	cm := s.Logger.Check(lvl, msg)
+func (s *sampler) Enabled(lvl zap.Level, msg string) bool {
 	switch lvl {
 	case zap.PanicLevel, zap.FatalLevel:
-		return cm
-	default:
-		if !cm.OK() || s.sampled(msg) {
-			return cm
-		}
-		return nil
+		return true
 	}
+	if s.Logger.Enabled(lvl, msg) && s.sampled(msg) {
+		return true
+	}
+	return false
 }
 
 func (s *sampler) Log(lvl zap.Level, msg string, fields ...zap.Field) {
@@ -120,38 +118,38 @@ func (s *sampler) Log(lvl zap.Level, msg string, fields ...zap.Field) {
 	case zap.PanicLevel, zap.FatalLevel:
 		s.Logger.Log(lvl, msg, fields...)
 	default:
-		if cm := s.Logger.Check(lvl, msg); cm.OK() && s.sampled(msg) {
-			cm.Write(fields...)
+		if s.Logger.Enabled(lvl, msg) && s.sampled(msg) {
+			s.Logger.Log(lvl, msg, fields...)
 		}
 	}
 }
 
 func (s *sampler) Debug(msg string, fields ...zap.Field) {
-	if s.Logger.Check(zap.DebugLevel, msg) != nil && s.sampled(msg) {
+	if s.Logger.Enabled(zap.DebugLevel, msg) && s.sampled(msg) {
 		s.Logger.Debug(msg, fields...)
 	}
 }
 
 func (s *sampler) Info(msg string, fields ...zap.Field) {
-	if s.Logger.Check(zap.InfoLevel, msg) != nil && s.sampled(msg) {
+	if s.Logger.Enabled(zap.InfoLevel, msg) && s.sampled(msg) {
 		s.Logger.Info(msg, fields...)
 	}
 }
 
 func (s *sampler) Warn(msg string, fields ...zap.Field) {
-	if s.Logger.Check(zap.WarnLevel, msg) != nil && s.sampled(msg) {
+	if s.Logger.Enabled(zap.WarnLevel, msg) && s.sampled(msg) {
 		s.Logger.Warn(msg, fields...)
 	}
 }
 
 func (s *sampler) Error(msg string, fields ...zap.Field) {
-	if s.Logger.Check(zap.ErrorLevel, msg) != nil && s.sampled(msg) {
+	if s.Logger.Enabled(zap.ErrorLevel, msg) && s.sampled(msg) {
 		s.Logger.Error(msg, fields...)
 	}
 }
 
 func (s *sampler) DFatal(msg string, fields ...zap.Field) {
-	if s.Logger.Check(zap.ErrorLevel, msg) != nil && s.sampled(msg) {
+	if s.Logger.Enabled(zap.ErrorLevel, msg) && s.sampled(msg) {
 		s.Logger.DFatal(msg, fields...)
 	}
 }
