@@ -21,7 +21,6 @@
 package zap
 
 import (
-	"fmt"
 	"os"
 )
 
@@ -31,13 +30,6 @@ var _exit = os.Exit
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
 type Logger interface {
-	// Check the minimum enabled log level.
-	Level() Level
-	// Change the level of this logger, as well as all its ancestors and
-	// descendants. This makes it easy to change the log level at runtime
-	// without restarting your application.
-	SetLevel(Level)
-
 	// Create a child logger, and optionally add some context to that logger.
 	With(...Field) Logger
 
@@ -142,12 +134,12 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 	entry := newEntry(lvl, msg, temp)
 	for _, hook := range log.Hooks {
 		if err := hook(entry); err != nil {
-			log.internalError(err.Error())
+			log.InternalError("hook", err)
 		}
 	}
 
 	if err := temp.WriteEntry(log.Output, entry.Message, entry.Level, entry.Time); err != nil {
-		log.internalError(err.Error())
+		log.InternalError("encoder", err)
 	}
 	temp.Free()
 	entry.free()
@@ -156,9 +148,4 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 		// Sync on Panic and Fatal, since they may crash the program.
 		log.Output.Sync()
 	}
-}
-
-func (log *logger) internalError(msg string) {
-	fmt.Fprintln(log.ErrorOutput, msg)
-	log.ErrorOutput.Sync()
 }

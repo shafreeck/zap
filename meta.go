@@ -21,9 +21,8 @@
 package zap
 
 import (
+	"fmt"
 	"os"
-
-	"github.com/uber-go/atomic"
 )
 
 // Meta is implementation-agnostic state management for Loggers. Most Logger
@@ -32,13 +31,13 @@ import (
 // Note that while the level-related fields and methods are safe for concurrent
 // use, the remaining fields are not.
 type Meta struct {
+	LevelEnabler
+
 	Development bool
 	Encoder     Encoder
 	Hooks       []Hook
 	Output      WriteSyncer
 	ErrorOutput WriteSyncer
-
-	lvl *atomic.Int32
 }
 
 // MakeMeta returns a new meta struct with sensible defaults: logging at
@@ -46,10 +45,10 @@ type Meta struct {
 // out.
 func MakeMeta(enc Encoder, options ...Option) Meta {
 	m := Meta{
-		lvl:         atomic.NewInt32(int32(InfoLevel)),
-		Encoder:     enc,
-		Output:      newLockedWriteSyncer(os.Stdout),
-		ErrorOutput: newLockedWriteSyncer(os.Stderr),
+		Encoder:      enc,
+		Output:       newLockedWriteSyncer(os.Stdout),
+		ErrorOutput:  newLockedWriteSyncer(os.Stderr),
+		LevelEnabler: InfoLevel,
 	}
 	for _, opt := range options {
 		opt.apply(&m)
@@ -57,27 +56,11 @@ func MakeMeta(enc Encoder, options ...Option) Meta {
 	return m
 }
 
-// Level returns the minimum enabled log level. It's safe to call concurrently.
-func (m Meta) Level() Level {
-	return Level(m.lvl.Load())
-}
-
-// SetLevel atomically alters the the logging level for this Meta and all its
-// clones.
-func (m Meta) SetLevel(lvl Level) {
-	m.lvl.Store(int32(lvl))
-}
-
 // Clone creates a copy of the meta struct. It deep-copies the encoder, but not
 // the hooks (since they rarely change).
 func (m Meta) Clone() Meta {
 	m.Encoder = m.Encoder.Clone()
 	return m
-}
-
-// Enabled returns true if logging a message at a particular level is enabled.
-func (m Meta) Enabled(lvl Level) bool {
-	return lvl >= m.Level()
 }
 
 // Check returns a CheckedMessage logging the given message is Enabled, nil
@@ -94,4 +77,12 @@ func (m Meta) Check(log Logger, lvl Level, msg string) *CheckedMessage {
 		}
 	}
 	return NewCheckedMessage(log, lvl, msg)
+}
+
+// InternalError prints an internal error message to the configured
+// ErrorOutput. This method should only be used to report internal logger
+// problems and should not be used to report user-caused problems.
+func (m Meta) InternalError(cause string, err error) {
+	fmt.Fprintf(m.ErrorOutput, "%v %s error: %v\n", _timeNow().UTC(), cause, err)
+	m.ErrorOutput.Sync()
 }
