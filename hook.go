@@ -36,15 +36,15 @@ var (
 )
 
 // A Hook is executed each time the logger writes an Entry. It can modify the
-// entry (including adding context to Entry.Fields()), but must not retain
-// references to the entry or any of its contents. Returned errors are written to
-// the logger's error output.
+// entry (including adding context via Entry.AddFields()), but must not retain
+// references to the entry or any of its contents. Returned errors are written
+// to the logger's error output.
 //
 // Hooks implement the Option interface.
 type Hook func(*Entry) error
 
 // apply implements the Option interface.
-func (h Hook) apply(m *Meta) {
+func (h Hook) apply(m *Logger) {
 	m.Hooks = append(m.Hooks, h)
 }
 
@@ -86,7 +86,7 @@ func AddStacks(lvl Level) Option {
 			return errHookNilEntry
 		}
 		if e.Level >= lvl {
-			Stack().AddTo(e.Fields())
+			e.AddFields(Stack())
 		}
 		return nil
 	})
