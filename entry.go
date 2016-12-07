@@ -64,7 +64,25 @@ func (e Entry) EncodeTo(w io.Writer, enc Encoder, fields []Field) error {
 	return err
 }
 
-// Fields returns a mutable reference to the entry's accumulated context.
-func (e Entry) Fields() KeyValue {
-	return e.enc
+// CheckedEntry is an Entry together with an opaque Facility that has already
+// agreed to log it (Facility.Enabled(Entry) == true). It is returned by
+// Logger.Check to enable performance sensitive log sites to not allocate
+// fields when disabled.
+type CheckedEntry struct {
+	Entry
+	fac Facility
+}
+
+// OK returns true if ce is not nil; TODO drop this?
+func (ce *CheckedEntry) OK() bool {
+	return ce != nil
+}
+
+// Write writes the entry any logger reference stored. This only works if the
+// Entry was returned by Logger.Check.
+func (ce *CheckedEntry) Write(fields ...Field) {
+	if ce != nil && ce.fac != nil {
+		ce.fac.Log(ce.Entry, fields...)
+	}
+	// TODO: do we need free and dupe check?
 }
