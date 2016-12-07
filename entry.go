@@ -20,7 +20,10 @@
 
 package zap
 
-import "time"
+import (
+	"io"
+	"time"
+)
 
 // An Entry represents a complete log message. The entry's structured context
 // is already serialized, but the log level, time, and message are available
@@ -33,6 +36,16 @@ type Entry struct {
 	Time    time.Time
 	Message string
 	enc     Encoder
+}
+
+// EncodeTo encodes the entry and fields to an io.Writer using an Encoder,
+// returning any error.
+func (e Entry) EncodeTo(w io.Writer, enc Encoder, fields []Field) error {
+	enc = enc.Clone()
+	addFields(enc, fields)
+	err := enc.WriteEntry(w, msg, lvl, t)
+	enc.Free()
+	return err
 }
 
 // Fields returns a mutable reference to the entry's accumulated context.
