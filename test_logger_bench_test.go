@@ -26,6 +26,20 @@ import (
 	"github.com/uber-go/zap"
 )
 
+// TODO: eliminate this once we resolve Facility vs LevelEnabler
+type levelEnabledFacility struct {
+	zap.Facility
+	zap.LevelEnabler
+}
+
+func (lef levelEnabledFacility) Enabled(ent zap.Entry) bool {
+	return lef.LevelEnabler.Enabled(ent.Level)
+}
+
+func leveledFacility(enab zap.LevelEnabler, fac zap.Facility) zap.Facility {
+	return levelEnabledFacility{fac, enab}
+}
+
 func withBenchedTee(b *testing.B, f func(zap.Logger)) {
 	logger := zap.Tee(
 		zap.New(
