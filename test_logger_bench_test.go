@@ -41,18 +41,11 @@ func leveledFacility(enab zap.LevelEnabler, fac zap.Facility) zap.Facility {
 }
 
 func withBenchedTee(b *testing.B, f func(zap.Logger)) {
-	logger := zap.Tee(
-		zap.New(
-			zap.NewJSONEncoder(),
-			zap.DebugLevel,
-			zap.DiscardOutput,
-		),
-		zap.New(
-			zap.NewJSONEncoder(),
-			zap.InfoLevel,
-			zap.DiscardOutput,
-		),
-	)
+	discardJSON := zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard)
+	logger := zap.New(zap.Tee(
+		leveledFacility(zap.DebugLevel, discardJSON),
+		leveledFacility(zap.InfoLevel, discardJSON),
+	), zap.DebugLevel)
 	b.ResetTimer()
 	f(logger)
 }

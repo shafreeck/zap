@@ -65,10 +65,12 @@ func withJSONLogger(t testing.TB, opts []Option, f func(Logger, *testBuffer)) {
 	sink := &testBuffer{}
 	errSink := &testBuffer{}
 
-	allOpts := make([]Option, 0, 3+len(opts))
-	allOpts = append(allOpts, DebugLevel, Output(sink), ErrorOutput(errSink))
+	allOpts := make([]Option, 0, 2+len(opts))
+	allOpts = append(allOpts, DebugLevel, ErrorOutput(errSink))
 	allOpts = append(allOpts, opts...)
-	logger := New(newJSONEncoder(NoTime()), allOpts...)
+	logger := New(
+		WriterFacility(newJSONEncoder(NoTime()), sink),
+		allOpts...)
 
 	f(logger, sink)
 	assert.Empty(t, errSink.String(), "Expected error sink to be empty.")
@@ -356,11 +358,8 @@ func TestJSONLoggerWriteEntryFailure(t *testing.T) {
 	errBuf := &testBuffer{}
 	errSink := &spywrite.WriteSyncer{Writer: errBuf}
 	logger := New(
-		newJSONEncoder(),
-		DebugLevel,
-		Output(AddSync(spywrite.FailWriter{})),
-		ErrorOutput(errSink),
-	)
+		WriterFacility(newJSONEncoder(), spywrite.FailWriter{}),
+		DebugLevel, ErrorOutput(errSink))
 
 	logger.Info("foo")
 	// Should log the error.
@@ -370,7 +369,9 @@ func TestJSONLoggerWriteEntryFailure(t *testing.T) {
 
 func TestJSONLoggerSyncsOutput(t *testing.T) {
 	sink := &spywrite.WriteSyncer{Writer: ioutil.Discard}
-	logger := New(newJSONEncoder(), DebugLevel, Output(sink))
+	logger := New(
+		WriterFacility(newJSONEncoder(), sink),
+		DebugLevel)
 
 	logger.Error("foo")
 	assert.False(t, sink.Called(), "Didn't expect logging at error level to Sync underlying WriteCloser.")

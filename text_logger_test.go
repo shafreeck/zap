@@ -31,9 +31,11 @@ func withTextLogger(t testing.TB, opts []Option, f func(Logger, *testBuffer)) {
 	errSink := &testBuffer{}
 
 	allOpts := make([]Option, 0, 3+len(opts))
-	allOpts = append(allOpts, DebugLevel, Output(sink), ErrorOutput(errSink))
+	allOpts = append(allOpts, DebugLevel, ErrorOutput(errSink))
 	allOpts = append(allOpts, opts...)
-	logger := New(newTextEncoder(TextNoTime()), allOpts...)
+	logger := New(
+		WriterFacility(newTextEncoder(TextNoTime()), sink),
+		allOpts...)
 
 	f(logger, sink)
 	assert.Empty(t, errSink.String(), "Expected error sink to be empty.")
