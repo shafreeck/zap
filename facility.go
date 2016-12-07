@@ -20,11 +20,19 @@
 
 package zap
 
+import (
+	"io"
+	"os"
+)
+
 // Facility is a destination for log entries. It can have pervasive fields
 // added with With().
 type Facility interface {
 	With(...Field) Facility
+	Enabled(Entry) bool
 	Log(Entry, ...Field) error
+	// XXX idea on how we could restore internal enoding error repuorting:
+	//     SetErrorOutput(ws WriteSyncer)
 }
 
 // WriterFacility creates a facility that writes logs to an io.Writer. By
@@ -49,6 +57,8 @@ func (iof ioFacility) With(fields ...Field) Facility {
 	addFields(iof.Encoder, fields)
 	return iof
 }
+
+func (ioFacility) Enabled(Entry) bool { return true }
 
 func (iof ioFacility) Log(ent Entry, fields ...Field) error {
 	if err := ent.EncodeTo(iof.Output, iof.Encoder, fields); err != nil {
