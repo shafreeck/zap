@@ -26,3 +26,24 @@ type Facility interface {
 	With(...Field) Facility
 	Log(Entry, ...Field) error
 }
+
+type ioFacility struct {
+	Encoder Encoder
+	Output  WriteSyncer
+}
+
+func (iof ioFacility) With(fields ...Field) Facility {
+	iof.Encoder = iof.Encoder.Clone()
+	addFields(iof.Encoder, fields)
+	return iof
+}
+
+func (iof ioFacility) Log(ent Entry, fields ...Field) error {
+	if err := ent.EncodeTo(iof.Output, iof.Encoder, fields); err != nil {
+		return err
+	}
+	if ent.Level > ErrorLevel {
+		// Sync on Panic and Fatal, since they may crash the program.
+		iof.Output.Sync()
+	}
+}
