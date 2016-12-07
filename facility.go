@@ -27,6 +27,18 @@ type Facility interface {
 	Log(Entry, ...Field) error
 }
 
+// WriterFacility creates a facility that writes logs to an io.Writer. By
+// default, if w is nil, os.Stdout is used.
+func WriterFacility(enc Encoder, w io.Writer) Facility {
+	if w == nil {
+		w = os.Stdout
+	}
+	return ioFacility{
+		Encoder: enc,
+		Output:  newLockedWriteSyncer(AddSync(w)),
+	}
+}
+
 type ioFacility struct {
 	Encoder Encoder
 	Output  WriteSyncer
