@@ -25,17 +25,33 @@ import (
 	"time"
 )
 
-// An Entry represents a complete log message. The entry's structured context
-// is already serialized, but the log level, time, and message are available
-// for inspection and modification.
-//
-// Entries are pooled, so any functions that accept them must be careful not to
-// retain references to them.
+// An Entry represents a log mesasge being logged. It is created to capture
+// state beneath a Logger method, like Info, and passed around to all Facility
+// values attached to the logger.
 type Entry struct {
 	Level   Level
 	Time    time.Time
 	Message string
-	enc     Encoder
+
+	fieldSets []Field
+}
+
+// AddFields adds a new set of fields to the log entry.
+func (e Entry) AddFields(fields ...Field) Entry {
+	// TODO: pool []Field?
+	e.fieldSets = append(e.fieldSets, fields)
+	return e
+}
+
+// EachField calls the given function for each Field added by AddFields.
+func (e Entry) EachField(f func(Field) bool) {
+	for i := range e.fieldSets {
+		for j := range e.fieldSets[i] {
+			if f(e.fieldSets[i][j]) {
+				return
+			}
+		}
+	}
 }
 
 // EncodeTo encodes the entry and fields to an io.Writer using an Encoder,
