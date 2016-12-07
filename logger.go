@@ -58,7 +58,10 @@ type Logger interface {
 	Fatal(string, ...Field)
 }
 
-type logger struct{ Meta }
+type logger struct {
+	Meta
+	fac Facility
+}
 
 // New constructs a logger that uses the provided encoder. By default, the
 // logger will write Info logs or higher to standard out. Any errors during logging
@@ -69,12 +72,17 @@ type logger struct{ Meta }
 func New(enc Encoder, options ...Option) Logger {
 	return &logger{
 		Meta: MakeMeta(enc, options...),
+		fac: ioFacility{
+			Encoder: log.Meta.Encoder,
+			Output:  log.Meta.Output,
+		},
 	}
 }
 
 func (log *logger) With(fields ...Field) Logger {
 	clone := &logger{
 		Meta: log.Meta.Clone(),
+		fac:  log.fac.With(fields...),
 	}
 	addFields(clone.Encoder, fields)
 	return clone
@@ -131,11 +139,7 @@ func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 			log.InternalError("hook", err)
 		}
 	}
-	if err := ent.EncodeTo(log.Output, ent.enc, fields); err != nil {
+	if err := log.Facility.Log(ent, fields...); err != nil {
 		log.InternalError("encoder", err)
-	}
-	if ent.Level > ErrorLevel {
-		// Sync on Panic and Fatal, since they may crash the program.
-		log.Output.Sync()
 	}
 }
